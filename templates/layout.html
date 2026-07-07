@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title></title>
+</head>
+
+<body>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <nav class = "navbar navbar-expand-lg navbar-light bg-light">
+        <div class = " collapse navbar-collapse container-fluid px-5">
+            <a class="navbar-brand fw-normal fs-2 newsreader" href="/">
+            Study
+        </a>
+            <ul class = "navbar-nav ms-auto">
+                <li class = "nav-item">
+                    <a class = "nav-link mx-3 fw-bold newsreader" href = "/home">Home</a>
+                </li>
+                <li class = "nav-item">
+                    <a class = "nav-link mx-3 fw-bold newsreader" href = "/dashboard">Dashboard</a>
+                </li>            
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+</body>
+</html>
