@@ -1,0 +1,26 @@
+.card {
+    height: 90px;
+    background-color: #d9d9d9;
+    border-radius: 8px;
+}
+
+.top-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 200px;
+    margin-top: 200px;
+}
+
+.info-section {
+    display: flex;
+    flex-direction: column;
+}
+
+
+.newsreader {
+  font-family: "Newsreader", serif;
+  font-optical-sizing: auto;
+  font-weight: 200;
+  font-style: normal;
+}
