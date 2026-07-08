@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+    <h1 class="fw-bold newsreader mb-4">Paste your syllabus</h1>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        
+        <div class="mb-3">
+            {{ form.syllabus_text(class="form-control", rows="15", placeholder="Paste your syllabus text here..") }}
+        </div>
+
+         <div class="mb-3">
+            {{ form.target_grade.label(class="form-label") }}
+            {{ form.target_grade(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.curr_est_grade.label(class="form-label") }}
+            {{ form.curr_est_grade(class="form-control") }}
+        </div>
+        <button type="submit" class="btn btn-dark btn-lg">Analyze</button>
+    </form>
+
+    {% if result %}
+    <div class="mt-5">
+        <h3 class="newsreader">Parsed Result</h3>
+        <p class="p-3 bg-light border">{{ result }}</p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

@@ -1,8 +1,12 @@
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
-from wtforms import TextAreaField
-from wtforms.validators import DataRequired
+from wtforms import TextAreaField, FloatField
+from wtforms.validators import DataRequired, Optional
+from gemini_parser import parse_syllabus, clean_and_parse
+from datetime import datetime
+from scoring import priority_score
+import json
 from calendar_service import get_calendar_service, add_assignment_to_calendar
 
 app = Flask(__name__)
@@ -23,7 +27,7 @@ class Assignment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     course_id = db.Column(db.Integer, db.ForeignKey("course.id"), nullable=False)
     title = db.Column(db.String(200), nullable=False)
-    due_date = db.Column(db.Date, nullable=False)
+    due_date = db.Column(db.Date)
     grade_weight = db.Column(db.Float, nullable=False)
     assignment_type = db.Column(db.String(20))  # homework / quiz / exam / project
     status = db.Column(db.String(20), default="not_started")
@@ -34,22 +38,126 @@ class Goal(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     course_id = db.Column(db.Integer, db.ForeignKey("course.id"), nullable=False)
     target_grade = db.Column(db.Float)
-    current_estimated_grade = db.Column(db.Float)
-    notes = db.Column(db.Text)
+    curr_est_grade = db.Column(db.Float)
     course = db.relationship("Course", backref="goal")
 
 class SyllabusForm(FlaskForm):
     syllabus_text = TextAreaField("Paste syllabus text", validators=[DataRequired()])
+    target_grade = FloatField("Target grade (optional)", validators=[Optional()])
+    curr_est_grade = FloatField("Current estimated grade (optional)", validators=[Optional()])
 
 
-@app.route("/input", methods=["GET", "POST"])
+# Helper functions for routing functions
+
+def get_remaining_assginments(course):
+    remaining = []
+
+    for asgn in course.assignments:
+        if asgn.status != "completed":
+            remaining.append(asgn)
+    
+    return len(remaining)
+
+def sort_helper(element):
+    if element["priority_score"] is None:
+        return -1
+    else:
+        return element["priority_score"]
+
+def get_dashboard_data():
+    courses = Course.query.all()
+    results = []
+
+    for c in courses:
+        goal = c.goal[0] if c.goal else None
+        target_grade = goal.target_grade if goal else None
+        curr_est_grade = goal.curr_est_grade if goal else None
+
+        for asgn in c.assignments:
+            if asgn.due_date is None:
+                score = None
+            else:
+                days_rem = (asgn.due_date - datetime.now().date()).days
+                score = priority_score(
+                    grade_weight=asgn.grade_weight,
+                    days_rem=days_rem,
+                    course_pri_boost=c.priority_boost,
+                    target_grade=target_grade,
+                    curr_est_grade=curr_est_grade
+                )
+                score = round(score, 2)
+            results.append({
+                "name": c.name,
+                "assignment": asgn.title,
+                "weight": asgn.grade_weight,
+                "priority_score": score
+            })
+    
+    results.sort(key=sort_helper, reverse=True)
+    return results
+
+
+# Routing functions...
+
+@app.route("/upload", methods=["GET", "POST"])
 def input_page():
+    # Set up the upload page for users to paste their syllabus
     form = SyllabusForm()
-    return render_template("input.html", form=form)
+    res = None
+    if form.validate_on_submit():
+        syllabus_text = form.syllabus_text.data
+        raw_res = parse_syllabus(syllabus_text)
+        parsed = clean_and_parse(raw_res)
+
+        course_name = parsed.get("course_name", "Unkown Course")
+        course = Course.query.filter_by(name=course_name).first()
+        if course is None:
+            course = Course(name=course_name)
+            db.session.add(course)
+        
+        for asgn in parsed["assignments"]:
+            due_date_str = asgn.get("due_date")
+            due_date = None
+            if due_date_str:
+                parsed_date = datetime.strptime(asgn["due_date"], "%Y-%m-%d")
+                due_date = parsed_date.date()
+            assignment = Assignment(
+                course=course,
+                title=asgn["title"],
+                due_date=due_date,
+                grade_weight=asgn["grade_weight"],
+                assignment_type=asgn.get("assignment_type"),
+                raw_text=asgn.get("raw_text")
+            )
+            db.session.add(assignment)
+        
+        target_grade = form.target_grade.data
+        curr_est_grade = form.curr_est_grade.data
+        if target_grade is not None or curr_est_grade is not None:
+            goal = Goal(
+                course=course,
+                target_grade=target_grade,
+                curr_est_grade=curr_est_grade
+            )
+            db.session.add(goal)
+        
+        db.session.commit()
+        res = parsed
+
+    return render_template("upload.html", form=form, result=res)
 
 @app.route("/")
 def index():
-    return "Survival Guide is alive."
+    # To-do: Connect this route with the "homepage.html"
+    courses = Course.query.all()
+    for c in courses:
+        c.remaining_count = get_remaining_assginments(c)
+    return render_template("homepage.html", courses=courses)
+
+@app.route("/dashboard")
+def dashboard():
+    dashboard_data = get_dashboard_data()
+    return render_template("dashboard.html", courses=dashboard_data)
 
 @app.route("/export-calendar")
 def export_calendar():
@@ -70,4 +178,4 @@ def export_calendar():
     return f"Added {count} assignments to your Google Calendar."
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
