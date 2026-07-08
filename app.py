@@ -7,6 +7,7 @@ from gemini_parser import parse_syllabus, clean_and_parse
 from datetime import datetime
 from scoring import priority_score
 import json
+from calendar_service import get_calendar_service, add_assignment_to_calendar
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///site.db"
@@ -169,6 +170,24 @@ def complete_assignment(assignment_id):
     assignment.status = "completed"
     db.session.commit()
     return redirect(url_for("dashboard"))
+
+@app.route("/export-calendar")
+def export_calendar():
+    assignments = Assignment.query.all()
+    if not assignments:
+        return "No assignments in the database yet, nothing to export."
+    service = get_calendar_service()
+    count = 0
+    for assignment in assignments:
+        add_assignment_to_calendar(
+            service,
+            title=assignment.title,
+            due_date=assignment.due_date,
+            course_name=assignment.course.name if assignment.course else None,
+            assignment_type=assignment.assignment_type,
+        )
+        count += 1
+    return f"Added {count} assignments to your Google Calendar."
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
