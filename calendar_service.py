@@ -42,7 +42,7 @@ def add_assignment_to_calendar(service, title, due_date, course_name=None, assig
         },
     }
     created = service.events().insert(calendarId="primary", body=event).execute()
-    return created.get("htmlLink")
+    return created
 
 if __name__ == "__main__":
     service = get_calendar_service()

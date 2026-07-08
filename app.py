@@ -22,6 +22,7 @@ class Course(db.Model):
     professor = db.Column(db.String(100))
     priority_boost = db.Column(db.Float, default=1.0)
     color = db.Column(db.String(20))
+    syllabus_text = db.Column(db.Text)
 
 class Assignment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -32,6 +33,7 @@ class Assignment(db.Model):
     assignment_type = db.Column(db.String(20))  # homework / quiz / exam / project
     status = db.Column(db.String(20), default="not_started")
     raw_text = db.Column(db.Text)
+    gcal_event_id = db.Column(db.String(100))
     course = db.relationship("Course", backref="assignments")
 
 class Goal(db.Model):
@@ -114,6 +116,7 @@ def input_page():
         if course is None:
             course = Course(name=course_name)
             db.session.add(course)
+        course.syllabus_text = syllabus_text
         
         for asgn in parsed["assignments"]:
             due_date_str = asgn.get("due_date")
@@ -168,19 +171,27 @@ def export_calendar():
     service = get_calendar_service()
     count = 0
     skipped = 0
+    already_there = 0
     for assignment in assignments:
         if assignment.due_date is None:
             skipped += 1
             continue
-        add_assignment_to_calendar(
+        if assignment.gcal_event_id:
+            already_there += 1
+            continue
+        created = add_assignment_to_calendar(
             service,
             title=assignment.title,
             due_date=assignment.due_date,
             course_name=assignment.course.name if assignment.course else None,
             assignment_type=assignment.assignment_type,
         )
+        assignment.gcal_event_id = created["id"]
         count += 1
+    db.session.commit()
     message = f"Added {count} assignments to your Google Calendar."
+    if already_there:
+        message += f" {already_there} were already on the calendar."
     if skipped:
         message += f" Skipped {skipped} with no due date."
     flash(message)
