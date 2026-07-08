@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, flash, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from wtforms import TextAreaField, FloatField
@@ -163,10 +163,15 @@ def dashboard():
 def export_calendar():
     assignments = Assignment.query.all()
     if not assignments:
-        return "No assignments in the database yet, nothing to export."
+        flash("No assignments in the database yet, nothing to export.")
+        return redirect(url_for("dashboard"))
     service = get_calendar_service()
     count = 0
+    skipped = 0
     for assignment in assignments:
+        if assignment.due_date is None:
+            skipped += 1
+            continue
         add_assignment_to_calendar(
             service,
             title=assignment.title,
@@ -175,7 +180,11 @@ def export_calendar():
             assignment_type=assignment.assignment_type,
         )
         count += 1
-    return f"Added {count} assignments to your Google Calendar."
+    message = f"Added {count} assignments to your Google Calendar."
+    if skipped:
+        message += f" Skipped {skipped} with no due date."
+    flash(message)
+    return redirect(url_for("dashboard"))
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
