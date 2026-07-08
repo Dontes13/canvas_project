@@ -12,6 +12,13 @@
                     <h5>#{{ loop.index}} - {{ course.name }}</h5>
                     <p>{{ course.assignment}}</p>
                     <p>Grade Weight: {{ course.weight}}%</p>
+                    {% if course.status == "completed" %}
+                        <p>Completed</p>
+                    {% else %}
+                        <form action="/complete/{{ course.id }}" method="POST">
+                            <button type="submit">Mark as done</button>
+                        </form>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>

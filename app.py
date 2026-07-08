@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from wtforms import TextAreaField, FloatField
@@ -73,6 +73,9 @@ def get_dashboard_data():
         curr_est_grade = goal.curr_est_grade if goal else None
 
         for asgn in c.assignments:
+            if asgn.status == "completed":
+                continue
+
             if asgn.due_date is None:
                 score = None
             else:
@@ -86,10 +89,12 @@ def get_dashboard_data():
                 )
                 score = round(score, 2)
             results.append({
+                "id": asgn.id,
                 "name": c.name,
                 "assignment": asgn.title,
                 "weight": asgn.grade_weight,
-                "priority_score": score
+                "priority_score": score,
+                "status": asgn.status
             })
     
     results.sort(key=sort_helper, reverse=True)
@@ -157,6 +162,13 @@ def index():
 def dashboard():
     dashboard_data = get_dashboard_data()
     return render_template("dashboard.html", courses=dashboard_data)
+
+@app.route("/complete/<int:assignment_id>", methods=["POST"])
+def complete_assignment(assignment_id):
+    assignment = Assignment.query.get(assignment_id)
+    assignment.status = "completed"
+    db.session.commit()
+    return redirect(url_for("dashboard"))
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
