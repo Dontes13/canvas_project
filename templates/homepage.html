@@ -27,21 +27,10 @@
                 {% for course in courses %}
                 <div class="card mb-4 p-3">
                     <h5>{{ course.name }}</h5>
-                    <p>{{ course.priority_score}}</p>
+                    <p>{{ course.remaining_count}} assignments left</p>
                 </div>
                 {% endfor %}
             </div>
-
-            <div class="col-md-4">
-                <h2 class="fw-bold mb-4">Recommendations</h2>
-                
-                {% for course in courses %}
-                <div class="card mb-4 p-3">
-                    <h5>{{ course.name }}</h5>
-                    <p>{{ course.priority_score}}</p>
-                </div>
-                {% endfor %}
-            </div>   
 </div>
 
 

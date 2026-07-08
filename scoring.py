@@ -1,9 +1,9 @@
 import math
 
-def priority_score(grade_weight, days_rem, course_pri_boost=1.0, target_grade=None, curr_grade=None):
-    if target_grade is not None and curr_grade is not None:
-        grade_gap = target_grade - curr_grade
-        grade_impact = grade_weight * grade_gap
+def priority_score(grade_weight, days_rem, course_pri_boost=1.0, target_grade=None, curr_est_grade=None):
+    if target_grade is not None and curr_est_grade is not None:
+        grade_gap = target_grade - curr_est_grade
+        grade_impact = grade_weight * (1 + grade_gap / 100)
     else:
         grade_impact = grade_weight
     
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     print("No goal:", score1)
 
     # Same exam, but student wants 90%, currently estimated at 70%
-    score2 = priority_score(grade_weight=25, days_rem=3, target_grade=90, curr_grade=70)
+    score2 = priority_score(grade_weight=25, days_rem=3, target_grade=90, curr_est_grade=70)
     print("With goal gap:", score2)
 
     # Due today
