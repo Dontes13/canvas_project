@@ -1,9 +1,11 @@
-from flask import Flask, render_template, flash, redirect, url_for
+from flask import Flask, render_template, flash, redirect, url_for, request, jsonify, session
+import uuid
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from wtforms import TextAreaField, FloatField
 from wtforms.validators import DataRequired, Optional
-from gemini_parser import parse_syllabus, clean_and_parse
+from flask_wtf.file import FileField, FileAllowed
+from gemini_parser import parse_syllabus, clean_and_parse, parse_file
 from datetime import datetime
 from scoring import priority_score
 import json
@@ -44,7 +46,8 @@ class Goal(db.Model):
     course = db.relationship("Course", backref="goal")
 
 class SyllabusForm(FlaskForm):
-    syllabus_text = TextAreaField("Paste syllabus text", validators=[DataRequired()])
+    syllabus_text = TextAreaField("Paste syllabus text", validators=[Optional()])
+    syllabus_file = FileField("Or upload your syllabus", validators=[FileAllowed(["pdf", "png", "jpg", "jpeg"], "PDF or image files only")])
     target_grade = FloatField("Target grade (optional)", validators=[Optional()])
     curr_est_grade = FloatField("Current estimated grade (optional)", validators=[Optional()])
 
@@ -113,8 +116,17 @@ def input_page():
     res = None
     if form.validate_on_submit():
         syllabus_text = form.syllabus_text.data
-        raw_res = parse_syllabus(syllabus_text)
-        parsed = clean_and_parse(raw_res)
+        uploaded = form.syllabus_file.data
+        if uploaded:
+            ext = uploaded.filename.rsplit(".", 1)[-1].lower()
+            mime = {"pdf": "application/pdf", "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg"}[ext]
+            parsed = clean_and_parse(parse_file(uploaded.read(), mime))
+            syllabus_text = parsed.pop("full_text", "")
+        elif syllabus_text and syllabus_text.strip():
+            parsed = clean_and_parse(parse_syllabus(syllabus_text))
+        else:
+            flash("Paste your syllabus text or upload a file first.")
+            return render_template("upload.html", form=form, result=None)
 
         course_name = parsed.get("course_name", "Unkown Course")
         course = Course.query.filter_by(name=course_name).first()
@@ -166,6 +178,29 @@ def index():
 def dashboard():
     dashboard_data = get_dashboard_data()
     return render_template("dashboard.html", courses=dashboard_data)
+
+chat_sessions = {}
+
+@app.route("/api/chat", methods=["POST"])
+def api_chat():
+    from study_chat import start_chat
+    from tutor import build_course_context
+    if "chat_id" not in session:
+        session["chat_id"] = str(uuid.uuid4())
+    chat_id = session["chat_id"]
+    if chat_id not in chat_sessions:
+        courses = Course.query.all()
+        context = build_course_context(courses) if courses else "No courses uploaded yet."
+        chat_sessions[chat_id] = start_chat(context)
+    message = (request.json.get("message") or "").strip()
+    if not message:
+        return jsonify({"reply": "Type a message first."})
+    try:
+        response = chat_sessions[chat_id].send_message(message)
+        return jsonify({"reply": response.text})
+    except Exception:
+        chat_sessions.pop(chat_id, None)
+        return jsonify({"reply": "Something went wrong on my end. Try asking again."})
 
 @app.route("/complete/<int:assignment_id>", methods=["POST"])
 def complete_assignment(assignment_id):

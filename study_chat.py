@@ -70,7 +70,7 @@ You can also plan study sessions on the student's Google Calendar. Rules:
 - After booking, use list_events on the affected days to verify the sessions were created correctly, then summarize the updated schedule.
 """
     return client.chats.create(
-        model="gemini-2.5-flash",
+        model="gemini-3-flash-preview",
         config=types.GenerateContentConfig(
             system_instruction=system,
             tools=[list_events, create_study_session],

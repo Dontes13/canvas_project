@@ -1,0 +1,143 @@
+<style>
+#chat-bubble {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: #212529;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 1000;
+}
+#chat-panel {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: min(340px, calc(100vw - 32px));
+    height: 460px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1001;
+}
+#chat-panel.open { display: flex; }
+#chat-panel.expanded { width: 480px; height: 80vh; }
+#chat-header {
+    background: #212529;
+    color: white;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+#chat-header button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    margin-left: 8px;
+}
+#chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+}
+.chat-msg {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    max-width: 85%;
+    white-space: pre-wrap;
+}
+.chat-msg.user { background: #212529; color: white; margin-left: auto; }
+.chat-msg.bot { background: #f1f3f5; color: #212529; margin-right: auto; }
+#chat-form { display: flex; border-top: 1px solid #dee2e6; }
+#chat-input { flex: 1; border: none; padding: 12px; outline: none; }
+#chat-send { border: none; background: #212529; color: white; padding: 0 16px; cursor: pointer; }
+</style>
+
+<button id="chat-bubble" aria-label="Open study tutor">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"><!--Boxicons v3.0 https://boxicons.com | License  https://docs.boxicons.com/free--><path fill="#fff" d="M19.5 5h-.55a2.5 2.5 0 0 0-2.45-2h-1c-.46-.61-1.18-1-2-1s-1.54.39-2 1h-1A2.5 2.5 0 0 0 8 5.5v8.66l-1.61-1.05a2.39 2.39 0 0 0-3.69 1.88c-.04.68.22 1.34.7 1.82l3.73 3.73c.94.94 2.2 1.46 3.54 1.46h6.34c2.76 0 5-2.24 5-5V7.5a2.5 2.5 0 0 0-2.5-2.5Zm.5 12c0 1.65-1.35 3-3 3h-6.34c-.79 0-1.56-.32-2.12-.88l-3.73-3.73a.35.35 0 0 1-.11-.3c0-.07.03-.19.15-.29a.39.39 0 0 1 .46-.03l3.16 2.05c.31.2.7.21 1.02.04s.52-.51.52-.88V5.5c0-.28.22-.5.5-.5h.5v8h2V4.5c0-.28.22-.5.5-.5s.5.22.5.5V13h2V5h.5c.28 0 .5.22.5.5V13h2V7h.5c.28 0 .5.22.5.5V17Z"/></svg>
+</button>
+<div id="chat-panel">
+    <div id="chat-header">
+        <span class="newsreader">Study Tutor</span>
+        <div>
+            <button id="chat-expand">&#x2921;</button>
+            <button id="chat-close">&#x2715;</button>
+        </div>
+    </div>
+    <div id="chat-messages"></div>
+    <form id="chat-form">
+        <input id="chat-input" placeholder="Ask about your classes..." autocomplete="off">
+        <button id="chat-send" type="submit">Send</button>
+    </form>
+</div>
+
+<script>
+const chatBubble = document.getElementById("chat-bubble");
+const chatPanel = document.getElementById("chat-panel");
+const chatMessages = document.getElementById("chat-messages");
+const chatForm = document.getElementById("chat-form");
+const chatInput = document.getElementById("chat-input");
+
+function addMsg(who, text) {
+    const div = document.createElement("div");
+    div.className = "chat-msg " + who;
+    div.textContent = text;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
+}
+
+chatBubble.addEventListener("click", () => {
+    chatPanel.classList.add("open");
+    chatBubble.style.display = "none";
+    if (!chatMessages.children.length) {
+        addMsg("bot", "Hey! Ask me about your classes, or say 'plan my study week'.");
+    }
+    chatInput.focus();
+});
+
+document.getElementById("chat-close").addEventListener("click", () => {
+    chatPanel.classList.remove("open");
+    chatBubble.style.display = "block";
+});
+
+document.getElementById("chat-expand").addEventListener("click", () => {
+    chatPanel.classList.toggle("expanded");
+});
+
+chatForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = chatInput.value.trim();
+    if (!text) return;
+    chatInput.value = "";
+    addMsg("user", text);
+    const thinking = addMsg("bot", "...");
+    try {
+        const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({message: text})
+        });
+        const data = await res.json();
+        thinking.textContent = data.reply;
+    } catch (err) {
+        thinking.textContent = "Connection problem. Try again.";
+    }
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+});
+</script>

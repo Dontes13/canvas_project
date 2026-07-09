@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types
 import json
 
 load_dotenv()
@@ -25,8 +26,33 @@ Syllabus text:
 {text}
 """
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3-flash-preview",
         contents=prompt
+    )
+    return response.text
+
+#pdf to text
+def parse_file(file_bytes, mime_type):
+    prompt = """You are parsing a college course syllabus from the attached file. Extract the course name and every graded item (assignments, quizzes, exams, midterms, finals, projects).
+
+Return a single JSON object with exactly these three fields:
+- "course_name": string, the name of the course as stated in the syllabus (e.g. "Introduction to Computer Science"). If no course name is stated, use "Unknown Course".
+- "assignments": a JSON array where each item has exactly these fields:
+  - "title": string, the name of the item (e.g. "Midterm Exam")
+  - "due_date": string in ISO format YYYY-MM-DD. If only a partial date is given, infer the most reasonable year (assume 2026 if no year is stated).
+  - "grade_weight": number (not a string), the percentage of the final grade this item is worth. Do not include a % sign.
+  - "assignment_type": one of exactly these four strings: "homework", "quiz", "exam", "project". Midterms and finals both count as "exam".
+- "full_text": string, the complete plain text of the syllabus transcribed from the file.
+
+Before returning your answer, verify that the JSON is syntactically valid — check that every array and object is properly closed and every item is separated by a comma.
+Return ONLY the raw JSON object. No markdown code fences, no explanation, no extra text before or after.
+"""
+    response = client.models.generate_content(
+        model="gemini-3-flash-preview",
+        contents=[
+            types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
+            prompt,
+        ],
     )
     return response.text
 

@@ -5,11 +5,17 @@
 <div class="container mt-5">
 
     <h1 class="fw-bold newsreader mb-4">Paste your syllabus</h1>
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
-        
+
         <div class="mb-3">
             {{ form.syllabus_text(class="form-control", rows="15", placeholder="Paste your syllabus text here..") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.syllabus_file.label(class="form-label") }}
+            {{ form.syllabus_file(class="form-control") }}
+            <div class="form-text">Accepts PDF, PNG, or JPG. Or just paste the text above.</div>
         </div>
 
          <div class="mb-3">
