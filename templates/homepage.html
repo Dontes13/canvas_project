@@ -7,12 +7,16 @@
         <div class = "row">
             <div class = "col-md-6">
                 <h1 class = "display-5 fw-bold newsreader">we help you study right</h1>
-                <p class = "fs-5 newsreader">upload and we'll analyze it for you.</p>
-                <a href="/upload" class = "btn btn-dark btn-lg mt-3">upload</a>
+                <p class = "fs-5 newsreader">Upload a syllabus we will analyze it for you and help
+                   you focus on what matters most. This is the ultimate syllabus survival guide
+                </p>
+                <a href="/upload" class = "btn btn-dark btn-lg mt-3">Upload</a>
             </div>
-            <div class = "col-md-6">
-                <img src="/static/images/study_image.png" alt="Study Image" class = "img-fluid">
-            </div>
+            <div class="col-md-4 ps-5">
+               <img src="https://i.giphy.com/3cwLpdCalQrML78gbe.webp"
+               class="img-fluid bunny-image"
+               alt="Study Animation">
+           </div>
         </div>
     </div>
 </div>
@@ -22,12 +26,12 @@
     <div class="container">
         <div class="row justify-content-center gap-5">
             <div class="col-md-4">
-                <h2 class="fw-bold mb-4">Weekly Summary</h2>
+                <h2 class="fw-bold mb-4 newsreader">Weekly Summary</h2>
 
                 {% for course in courses %}
                 <div class="card mb-4 p-3">
-                    <h5>{{ course.name }}</h5>
-                    <p>{{ course.remaining_count}} assignments left</p>
+                    <h5 class="newsreader fw-bold">{{ course.name }}</h5>
+                    <p class="newsreader">{{ course.remaining_count}} assignments left</p>
                 </div>
                 {% endfor %}
             </div>
