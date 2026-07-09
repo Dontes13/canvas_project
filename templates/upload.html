@@ -9,7 +9,7 @@
         {{ form.hidden_tag() }}
 
         <div class="mb-3">
-            {{ form.syllabus_text(class="form-control", rows="15", placeholder="Paste your syllabus text here..") }}
+            {{ form.syllabus_text(class="form-control", rows="15", placeholder="Paste your syllabus text here.. (also include due dates if not listed in syllabus)") }}
         </div>
 
         <div class="mb-3">
@@ -18,12 +18,12 @@
             <div class="form-text">Accepts PDF, PNG, or JPG. Or just paste the text above.</div>
         </div>
 
-         <div class="mb-3">
+        <div class="newsreader fw-bold mb-3">
             {{ form.target_grade.label(class="form-label") }}
             {{ form.target_grade(class="form-control") }}
         </div>
 
-        <div class="mb-3">
+        <div class="newsreader fw-bold mb-3">
             {{ form.curr_est_grade.label(class="form-label") }}
             {{ form.curr_est_grade(class="form-control") }}
         </div>
